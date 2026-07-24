@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spam Shield | TensorFlow AI Email Classifier</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: rgba(17, 24, 39, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --primary-grad: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            --accent-spam: #f43f5e;
+            --accent-ham: #10b981;
+            --font-display: 'Outfit', sans-serif;
+            --font-body: 'Inter', sans-serif;
+            --glow-shadow-spam: 0 0 30px rgba(244, 63, 94, 0.25);
+            --glow-shadow-ham: 0 0 30px rgba(16, 185, 129, 0.25);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.15) 0px, transparent 50%);
+            background-attachment: fixed;
+            font-family: var(--font-body);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        /* Header design */
+        header {
+            text-align: center;
+        }
+
+        header h1 {
+            font-family: var(--font-display);
+            font-size: 3rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            background: linear-gradient(to right, #e0e7ff, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+        }
+
+        header h1 span.logo-icon {
+            background: var(--primary-grad);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            font-weight: 400;
+        }
+
+        /* Glassmorphism Card */
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 2.5rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            font-family: var(--font-display);
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: 0.02em;
+        }
+
+        textarea {
+            width: 100%;
+            height: 180px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 1.25rem;
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            font-size: 1rem;
+            line-height: 1.6;
+            resize: none;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        textarea:focus {
+            border-color: #a855f7;
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.25);
+            background: rgba(15, 23, 42, 0.8);
+        }
+
+        textarea::placeholder {
+            color: rgba(156, 163, 175, 0.5);
+        }
+
+        /* Interactive presets style */
+        .presets {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .presets-title {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .presets-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .preset-badge {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 30px;
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .preset-badge:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #6366f1;
+            color: var(--text-primary);
+            transform: translateY(-2px);
+        }
+
+        /* Primary action button */
+        .btn-predict {
+            width: 100%;
+            background: var(--primary-grad);
+            border: none;
+            outline: none;
+            border-radius: 16px;
+            padding: 1.1rem;
+            color: white;
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 20px rgba(168, 85, 247, 0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-predict:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(168, 85, 247, 0.5);
+        }
+
+        .btn-predict:active {
+            transform: translateY(0);
+        }
+
+        .btn-predict:disabled {
+            background: #4b5563;
+            box-shadow: none;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        /* Spinner for loading state */
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Results Card */
+        .results-container {
+            display: none; /* Toggle programmatically */
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-top: 2rem;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        .results-container.show {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .result-card {
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            align-items: center;
+            text-align: center;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .result-card.spam {
+            background: rgba(244, 63, 94, 0.08);
+            border-color: rgba(244, 63, 94, 0.2);
+            box-shadow: var(--glow-shadow-spam);
+        }
+
+        .result-card.ham {
+            background: rgba(16, 185, 129, 0.08);
+            border-color: rgba(16, 185, 129, 0.2);
+            box-shadow: var(--glow-shadow-ham);
+        }
+
+        .result-badge {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            padding: 0.5rem 1.5rem;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-transform: uppercase;
+        }
+
+        .result-card.spam .result-badge {
+            color: var(--accent-spam);
+            background: rgba(244, 63, 94, 0.15);
+        }
+
+        .result-card.ham .result-badge {
+            color: var(--accent-ham);
+            background: rgba(16, 185, 129, 0.15);
+        }
+
+        .gauge-container {
+            width: 100%;
+            max-width: 400px;
+            margin-top: 0.5rem;
+        }
+
+        .gauge-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .gauge-bar-outer {
+            width: 100%;
+            height: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .gauge-bar-inner {
+            height: 100%;
+            width: 0%;
+            border-radius: 10px;
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .result-card.spam .gauge-bar-inner {
+            background: linear-gradient(90deg, #f43f5e, #fda4af);
+        }
+
+        .result-card.ham .gauge-bar-inner {
+            background: linear-gradient(90deg, #10b981, #6ee7b7);
+        }
+
+        .confidence-txt {
+            font-size: 1rem;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .confidence-txt span {
+            font-weight: 700;
+            font-size: 1.25rem;
+        }
+
+        .result-card.spam .confidence-txt span {
+            color: var(--accent-spam);
+        }
+
+        .result-card.ham .confidence-txt span {
+            color: var(--accent-ham);
+        }
+
+        footer {
+            text-align: center;
+            margin-top: auto;
+            color: rgba(156, 163, 175, 0.4);
+            font-size: 0.85rem;
+            padding-top: 2rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1><span class="logo-icon">🛡️</span> Spam Shield</h1>
+            <p>Advanced Email Classification Powered by TensorFlow & Deep Learning</p>
+        </header>
+
+        <!-- Main Card -->
+        <main class="glass-card">
+            <div class="input-group">
+                <label for="email-input">Analyze Email Content</label>
+                <textarea id="email-input" placeholder="Paste the raw text of the email here to check if it's spam..."></textarea>
+            </div>
+
+            <!-- Presets / Quick Test templates -->
+            <div class="presets">
+                <span class="presets-title">Sample Templates</span>
+                <div class="presets-list">
+                    <div class="preset-badge" onclick="loadPreset('spam1')">🎰 Mega Lottery Win</div>
+                    <div class="preset-badge" onclick="loadPreset('spam2')">⚠️ Urgent Bank Lockout</div>
+                    <div class="preset-badge" onclick="loadPreset('ham1')">📅 Lunch Meeting</div>
+                    <div class="preset-badge" onclick="loadPreset('ham2')">📁 Project Deliverable</div>
+                </div>
+            </div>
+
+            <!-- Predict Button -->
+            <button id="predict-btn" class="btn-predict" onclick="classifyEmail()">
+                <span class="spinner" id="btn-spinner"></span>
+                <span id="btn-text">Analyze Content</span>
+            </button>
+
+            <!-- Results -->
+            <div class="results-container" id="results-wrapper">
+                <div class="result-card" id="res-card">
+                    <div class="result-badge" id="res-badge">
+                        <span id="res-icon"></span>
+                        <span id="res-label"></span>
+                    </div>
+                    
+                    <div class="confidence-txt">
+                        Classification confidence: <span id="res-conf">0.00%</span>
+                    </div>
+
+                    <div class="gauge-container">
+                        <div class="gauge-label">
+                            <span>Ham (Safe)</span>
+                            <span>Spam</span>
+                        </div>
+                        <div class="gauge-bar-outer">
+                            <div class="gauge-bar-inner" id="gauge-fill"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer>
+            Built with Keras, TensorFlow, and FastAPI.
+        </footer>
+    </div>
+
+    <!-- JS Logic -->
+    <script>
+        const PRESETS_DATA = {
+            spam1: "Subject: Congratulations! You have won a free $1000 Walmart gift card. Click here to claim your prize instantly. High limits and guaranteed pay outs. Visit www.win-now.com.",
+            spam2: "Subject: URGENT: Your bank account has been suspended due to suspicious login attempts. Verify your details immediately to avoid account deletion: login-bank-secure-link.net/auth.",
+            ham1: "Subject: lunch meeting tomorrow\nHey, are we still meeting for lunch at 12:30 PM today at the deli? Let me know if you need to reschedule.",
+            ham2: "Subject: updated project timeline slides\nHi Team, I have attached the updated slides for the final product release next week. Let me know if you have any feedback before the customer review tomorrow morning. Thanks!"
+        };
+
+        function loadPreset(key) {
+            const txt = PRESETS_DATA[key];
+            if (txt) {
+                document.getElementById('email-input').value = txt;
+                // Auto scroll to prediction button
+                document.getElementById('predict-btn').scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        async function classifyEmail() {
+            const inputVal = document.getElementById('email-input').value.trim();
+            const btn = document.getElementById('predict-btn');
+            const spinner = document.getElementById('btn-spinner');
+            const btnTxt = document.getElementById('btn-text');
+            const resultsWrapper = document.getElementById('results-wrapper');
+            const resCard = document.getElementById('res-card');
+            const resIcon = document.getElementById('res-icon');
+            const resLabel = document.getElementById('res-label');
+            const resConf = document.getElementById('res-conf');
+            const gaugeFill = document.getElementById('gauge-fill');
+
+            if (!inputVal) {
+                alert("Please paste or type some email content to analyze!");
+                return;
+            }
+
+            // Enter loading state
+            btn.disabled = true;
+            spinner.style.display = 'block';
+            btnTxt.textContent = 'Analyzing...';
+            resultsWrapper.classList.remove('show');
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ text: inputVal })
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.detail || "Server error occurred");
+                }
+
+                const data = await response.json();
+
+                // Format results
+                const isSpam = data.label === 'Spam';
+                const confidencePct = (data.confidence * 100).toFixed(2) + '%';
+                const probPct = (data.spam_probability * 100).toFixed(2);
+
+                // Update layout styles based on prediction
+                if (isSpam) {
+                    resCard.className = 'result-card spam';
+                    resIcon.innerHTML = '🚨';
+                    resLabel.textContent = 'Spam Detected';
+                } else {
+                    resCard.className = 'result-card ham';
+                    resIcon.innerHTML = '🛡️';
+                    resLabel.textContent = 'Safe Email (Ham)';
+                }
+
+                resConf.textContent = confidencePct;
+                gaugeFill.style.width = probPct + '%';
+
+                // Display card with transitions
+                resultsWrapper.classList.add('show');
+
+            } catch (err) {
+                alert("Classification failed: " + err.message);
+                console.error(err);
+            } finally {
+                // Exit loading state
+                btn.disabled = false;
+                spinner.style.display = 'none';
+                btnTxt.textContent = 'Analyze Content';
+            }
+        }
+    </script>
+</body>
+</html>
