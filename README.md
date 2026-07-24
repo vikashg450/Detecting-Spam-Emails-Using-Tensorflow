@@ -6,24 +6,80 @@ A production-ready deep learning pipeline that classifies emails as **Spam** or 
 
 ---
 
-## 🖥️ Web App Demo
+## 🖥️ Web App UI
 
-The project includes a full **FastAPI web application** with an interactive UI for real-time spam detection.
+### Homepage — Email Input Interface
+![Web App Home](outputs/screenshots/ui_home.png)
 
-| Spam Detected 🚨 | Safe Email ✅ |
-|:-:|:-:|
-| ![Spam Result](outputs/confusion_matrix.png) | ![Training](outputs/training_history.png) |
+### 🚨 Spam Detected Result
+![Spam Result](outputs/screenshots/ui_spam_result.png)
+
+### ✅ Safe Email (Ham) Result
+![Ham Result](outputs/screenshots/ui_ham_result.png)
+
+---
+
+## 🔁 How It Works
+
+```
+  ┌─────────────────────────────────────────────────────────────┐
+  │                    HOW SPAM SHIELD WORKS                    │
+  └─────────────────────────────────────────────────────────────┘
+
+  1. USER INPUTS EMAIL TEXT
+        │
+        ▼
+  2. TEXT CLEANING  (src/preprocess.py)
+     • Remove "Subject:" prefix
+     • Strip newlines, tabs, extra spaces
+        │
+        ▼
+  3. TEXT VECTORIZATION  (built into model)
+     • Convert words → integer token IDs
+     • Pad / truncate to 150 tokens
+        │
+        ▼
+  4. EMBEDDING LAYER
+     • Map each token → 64-dim dense vector
+        │
+        ▼
+  5. BIDIRECTIONAL LSTM
+     • Read sequence forward + backward
+     • Capture long-range word dependencies
+        │
+        ▼
+  6. DENSE + DROPOUT LAYERS
+     • Learn high-level spam patterns
+     • Prevent overfitting with 30% dropout
+        │
+        ▼
+  7. SIGMOID OUTPUT
+     • Outputs probability: 0.0 (Ham) → 1.0 (Spam)
+     • Threshold: > 0.5 = SPAM, ≤ 0.5 = HAM
+        │
+        ▼
+  8. RESULT DISPLAYED
+     🚨 SPAM DETECTED  (e.g. 99.74% confidence)
+     🛡️ SAFE EMAIL     (e.g. 99.73% confidence)
+```
+
+### Step-by-Step User Flow
+| Step | Action | Description |
+|:----:|:-------|:------------|
+| 1 | Open the web app | Go to `http://localhost:8000` |
+| 2 | Paste or type email text | Use the large text area input |
+| 3 | (Optional) Use sample templates | Click "Mega Lottery Win", "Lunch Meeting", etc. |
+| 4 | Click **"Analyze Content"** | Sends the email to the AI model |
+| 5 | View result | Instantly see SPAM or HAM with confidence % |
 
 ---
 
 ## 📊 Model Performance
 
 ### Training History (Accuracy & Loss)
-
 ![Training History](outputs/training_history.png)
 
 ### Confusion Matrix
-
 ![Confusion Matrix](outputs/confusion_matrix.png)
 
 ### Classification Report
@@ -47,7 +103,11 @@ Detecting Spam Emails Using Tensorflow/
 ├── outputs/
 │   ├── spam_classifier_model.keras   # Trained TensorFlow model
 │   ├── training_history.png          # Accuracy & loss curves
-│   └── confusion_matrix.png          # Evaluation heatmap
+│   ├── confusion_matrix.png          # Evaluation heatmap
+│   └── screenshots/                  # Web UI screenshots
+│       ├── ui_home.png
+│       ├── ui_spam_result.png
+│       └── ui_ham_result.png
 ├── src/
 │   ├── app.py                        # FastAPI server
 │   ├── config.py                     # Hyperparameters & paths
@@ -165,7 +225,7 @@ pydantic>=1.8.0
 
 ## 👤 Author
 
-**Vikash Kumar**  
+**Vikash Kumar**
 GitHub: [@vikashg450](https://github.com/vikashg450)
 
 ---
